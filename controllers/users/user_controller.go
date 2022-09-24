@@ -3,6 +3,7 @@ package users
 import (
 	"bookstore_users_api/domain/users"
 	"bookstore_users_api/services"
+	"bookstore_users_api/utils/errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,12 +18,13 @@ func CreateUser(c *gin.Context){
 	var user users.User
 	
 	if err := c.ShouldBindJSON(&user); err != nil {
-		// TODO: handle json err
+		restErr := errors.NewBadRequestError("invalid json body")
+		c.JSON(restErr.Status, restErr)
 		return
 	}
 	result, saveError := services.CreateUser(user)
 	if saveError != nil {
-		//TODO: handle user creation err
+		c.JSON(saveError.Status, saveError)
 		return
 	}
 	c.JSON(http.StatusCreated,result )
