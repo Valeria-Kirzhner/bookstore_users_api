@@ -3,9 +3,6 @@ package users
 import (
 	"bookstore_users_api/domain/users"
 	"bookstore_users_api/services"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -19,13 +16,7 @@ func GetUser(c *gin.Context){
 func CreateUser(c *gin.Context){
 	var user users.User
 	
-	bytes, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		fmt.Println(err)
-		//TODO: handle err
-		return
-	}
-	if err := json.Unmarshal(bytes, &user); err != nil {
+	if err := c.ShouldBindJSON(&user); err != nil {
 		// TODO: handle json err
 		return
 	}
