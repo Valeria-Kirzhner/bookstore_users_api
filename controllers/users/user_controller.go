@@ -29,7 +29,7 @@ func CreateUser(c *gin.Context){
 func GetUser(c *gin.Context){
 	userId, userErr := strconv.ParseInt(c.Param("user_id"), 10, 64)
 	if userErr != nil {
-		err := errors.NewBadRequestError("user id should ")
+		err := errors.NewBadRequestError("user id should be a number")
 		c.JSON(err.Status, err)
 		return
 	}
