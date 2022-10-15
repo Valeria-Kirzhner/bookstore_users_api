@@ -7,27 +7,31 @@ import (
 	"bookstore_users_api/utils/errors"
 	"fmt"
 	"strings"
+
+	"github.com/go-sql-driver/mysql"
 )
 const (
 	queryInsertUser = "INSERT INTO users(first_name, last_name, email, date_created) VALUES(?,?,?,?);"
-	duplicatedEntry = "1062"
+	errorDuplicatedEntry = "1062"
+	queryGetUser = "SELECT id, first_name,last_name, email, date_created FROM users WHERE id=?;"
+	errorNoRows = "no rows in result set"
+
 )
-var ( usersDB = make(map[int64]*User))
 
 func (user *User) Get()  *errors.RestErr {
-	if err := users_db.Client.Ping(); err != nil {
-		panic(err)
+	stmt, err := users_db.Client.Prepare(queryGetUser);
+	if err != nil {
+		return errors.NewInternalServerError(err.Error())
 	}
-	result := usersDB[user.Id]
-	if result == nil {
-		return errors.NewNotFoundError(fmt.Sprintf("user %d not found", user.Id))
+	defer stmt.Close()
+	result := stmt.QueryRow(user.Id)
+	if err := result.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated); err != nil {
+		if strings.Contains(err.Error(), errorNoRows) {
+			return errors.NewBadRequestError(fmt.Sprintf("user %d does not found", user.Id ))
+		}
+		fmt.Println(err)
+		return errors.NewInternalServerError(fmt.Sprintf("error when truing to get user %d %s:", user.Id,err.Error()))
 	}
-	user.Id = result.Id
-	user.FirstName = result.FirstName
-	user.LastName = result.LastName
-	user.Email = result.Email
-	user.DateCreated = result.DateCreated
-
 	return  nil
 }
 
@@ -41,12 +45,16 @@ func (user *User) Save() *errors.RestErr {
 
 	user.DateCreated = date_utils.GetNowString()
 
-	insertResult, err := stmt.Exec(user.FirstName, user.LastName, user.Email, user.DateCreated)
-	if err != nil {
-		if strings.Contains(err.Error(), duplicatedEntry) {
-			return errors.NewBadRequestError(fmt.Sprintf("email %s already exists", user.Email ))
-			
+	insertResult, saveError := stmt.Exec(user.FirstName, user.LastName, user.Email, user.DateCreated)
+	if saveError != nil {
+
+		sqlError, ok := saveError.(*mysql.MySQLError) //truing to make type cast to chek if its a mysql error type. I Shell use that to be able to know what error number it is and switch and act by the mysql err num.
+		if !ok{
+			return errors.NewInternalServerError(fmt.Sprintf("error when truing to save user: %s", err.Error()))
 		}
+		fmt.Println(sqlError.Number)
+		fmt.Println(sqlError.Message)
+
 		return errors.NewInternalServerError(fmt.Sprintf("error when truing to save user: %s", err.Error()))
 	}
 
