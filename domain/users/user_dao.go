@@ -36,7 +36,7 @@ func (user *User) Get()  *errors.RestErr {
 
 func (user *User) Save() *errors.RestErr {
 
-	stmt, err := users_db.Client.Prepare(queryInsertUser)
+	stmt, err := users_db.Client.Prepare(queryInsertUser)// in use of prepare i have a choise of validating the data first.
 	if err != nil {
 		return errors.NewInternalServerError(err.Error())
 	}
@@ -46,14 +46,12 @@ func (user *User) Save() *errors.RestErr {
 
 	insertResult, saveError := stmt.Exec(user.FirstName, user.LastName, user.Email, user.DateCreated)
 	if saveError != nil {
-
 		sqlError, ok := saveError.(*mysql.MySQLError) //truing to make type cast to chek if its a mysql error type. I Shell use that to be able to know what error number it is and switch and act by the mysql err num.
 		if !ok{
 			return errors.NewInternalServerError(fmt.Sprintf("error when truing to save user: %s", err.Error()))
 		}
 		fmt.Println(sqlError.Number)
 		fmt.Println(sqlError.Message)
-
 		return errors.NewInternalServerError(fmt.Sprintf("error when truing to save user: %s", err.Error()))
 	}
 
