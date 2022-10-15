@@ -15,7 +15,6 @@ const (
 	errorDuplicatedEntry = "1062"
 	queryGetUser = "SELECT id, first_name,last_name, email, date_created FROM users WHERE id=?;"
 	errorNoRows = "no rows in result set"
-
 )
 
 func (user *User) Get()  *errors.RestErr {
